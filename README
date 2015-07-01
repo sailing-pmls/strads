@@ -1,3 +1,7 @@
+Please see our Petuum Bosen/STRADS wiki manual: https://github.com/petuum/bosen/wiki
+
+Quick start:
+
 1. build strads lib  
    cd strads-root-dir
    make  
