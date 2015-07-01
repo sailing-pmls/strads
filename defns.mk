@@ -13,7 +13,7 @@ STRADS_CXX = mpic++
 STRADS_CXXFLAGS = -g \
 	   -O2 \
            -Wall \
-           -std=c++0x \
+           -std=c++11 \
 	   -Wno-sign-compare \
            -fno-builtin-malloc \
            -fno-builtin-calloc \
