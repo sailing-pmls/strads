@@ -23,13 +23,13 @@ third_party_all: third_party_core \
 
 
 # ==================== eigen ====================                                                             
-EIGEN_SRC = $(THIRD_PARTY_SRC)/3.2.3.tar.gz
+#EIGEN_SRC = $(THIRD_PARTY_SRC)/3.2.3.tar.gz
 EIGEN_TAR = $(THIRD_PARTY_SRC)/eigen.tar.gz
 EIGEN_INCLUDE= $(THIRD_PARTY_INCLUDE)/Eigen
 
 eigen: $(EIGEN_INCLUDE)
 $(EIGEN_INCLUDE): $(EIGEN_SRC)
-	cp $(THIRD_PARTY_SRC)/3.2.3.tar.gz $(EIGEN_TAR)
+#	cp $(THIRD_PARTY_SRC)/3.2.3.tar.gz $(EIGEN_TAR)
 	tar zxf $(EIGEN_TAR) -C $(THIRD_PARTY_SRC)
 	cp -r $(THIRD_PARTY_SRC)/eigen*/Eigen $(THIRD_PARTY_INCLUDE)/
 
