@@ -76,9 +76,7 @@ void dualcd_svm::train_coordinator(sharedctx *ctx){
 
     active_set.erase(active_set.begin(), active_set.end());
     assert(active_set.size() == 0);
-
-    LOG(INFO) << "     Iteration " << iter << " RandIDX Set Size " << randidx.size() << endl;
-
+    //    LOG(INFO) << "     Iteration " << iter << " RandIDX Set Size " << randidx.size() << endl;
     vector<dpair> prev_vids;
     vector<long> current_vids;
 
@@ -273,8 +271,9 @@ void dualcd_svm::train_coordinator(sharedctx *ctx){
     double dual_obj=sum_alpha - wterm; 
     LOG(INFO) << "Primal obj:" << primal_obj << " Dual obj: " << dual_obj << " Gap: " << primal_obj - dual_obj << endl;  
     //    LOG(INFO) << " PGMax " << M << " PGmin " << m << " PG difference " << M - m << endl;
-    LOG(INFO) << "Elapsed time: " << double(std::clock() - begin)/CLOCKS_PER_SEC;
   } // for iter = 0 .... 
+
+  LOG(INFO) << "Elapsed time: " << double(std::clock() - begin)/CLOCKS_PER_SEC;
 
   // send termination command 
   stradsvm::bcwmsg msg;
