@@ -1,0 +1,29 @@
+package stradsvm;
+
+message pairt{
+  required int64 vid = 1;
+  required double value = 2;
+  optional double pg = 3;
+}
+
+message triplepair{
+  required int64 vid = 1;
+  required double wspdot  = 2;
+  required double spspdot = 3;
+}
+
+message bcwmsg {
+  required int32 src = 1;
+  optional int64 maxfeat = 2;
+  optional int64 samples = 3;
+
+  repeated pairt newpairs  = 4;
+  repeated pairt oldpairs = 5;
+
+  repeated triplepair result = 6;
+
+  optional double wterm = 7;
+
+  required int32 type=8;
+  repeated double mwsp=9 [packed=true];
+}
