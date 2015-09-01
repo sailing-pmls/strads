@@ -33,6 +33,7 @@ void *worker_mach(void *arg){
   // report max feats and samples to the coordinator 
   stradsvm::bcwmsg maxmsg;
   maxmsg.set_src(ctx->rank);
+  maxmsg.set_type(0);
   maxmsg.set_samples(handler.get_m_l());
   maxmsg.set_maxfeat(handler.get_m_m());
   string *buffer = new string;
