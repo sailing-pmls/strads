@@ -57,8 +57,8 @@ void ps_put_sync_ll(sharedctx *ctx, string &key, string &value){
   auto ps = ctx->ps_sendportmap[serverid];
   _ringport *sport = ps;
   context *send_ctx = sport->ctx;
-  send_ctx->push_ps_entry_outq((void *)packet, sizeof(pspacket) + len);
   pthread_mutex_lock(&ctx->m_lock_syncput);
+  send_ctx->push_ps_entry_outq((void *)packet, sizeof(pspacket) + len);
   int rc = pthread_cond_wait(&ctx->m_upsignal_syncput, &ctx->m_lock_syncput);
   pthread_mutex_unlock(&ctx->m_lock_syncput);
   free((void *)packet); // don't forget this 
@@ -89,10 +89,8 @@ void ps_get_sync_ll(sharedctx *ctx, string &key, string &value){
   auto ps = ctx->ps_sendportmap[serverid];
   _ringport *sport = ps;
   context *send_ctx = sport->ctx;
-  send_ctx->push_ps_entry_outq((void *)packet, sizeof(pspacket) + len);
-
   pthread_mutex_lock(&ctx->m_lock_syncget);
-  //  int rc = pthread_cond_wait(&ctx->m_upsignal_syncget, &ctx->m_lock_syncget);
+  send_ctx->push_ps_entry_outq((void *)packet, sizeof(pspacket) + len);
   pthread_cond_wait(&ctx->m_upsignal_syncget, &ctx->m_lock_syncget);
   pthread_mutex_unlock(&ctx->m_lock_syncget);
   void *msg = (void *)((uintptr_t)retbuf + sizeof(pspacket));
