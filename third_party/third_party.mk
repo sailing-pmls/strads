@@ -4,6 +4,12 @@ BOOST_HOST = http://downloads.sourceforge.net/project/boost/boost/1.56.0
 CAPNP_HOST = https://capnproto.org/capnproto-c++-0.4.1.tar.gz
 
 
+third_party_minimal:    path \
+                        eigen \
+                        libconfig \
+                        protobuf
+
+
 third_party_core: path \
 	          gflags \
                   glog \
