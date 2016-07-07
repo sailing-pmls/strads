@@ -2,20 +2,24 @@ Please read our Petuum Bösen/Strads [documentation](http://docs.petuum.com/) fi
 
 Quick start:
 
-1. build strads lib  
-   cd strads-root-dir
-   make  
+build strads lib
+```
+cd strads-root-dir
+make
+```
 
-2) build application 
-   cd ./apps/your-app-dir
-   Make in app/your app 
+build application 
+```
+cd ./apps/your-app-dir
+Make in app/your app 
+```
 
-
-example) LDA 
-  cd strads-root-dir 
-  make 
-  cd ./apps/lda_release 
-  make 
-  ./single.py
-
-  * you need to modify single.py to set path to the input file 
+example for LDA 
+```
+cd strads-root-dir 
+make 
+cd ./apps/lda_release 
+make 
+./single.py
+```
+you need to modify single.py to set path to the input file 
