@@ -1,4 +1,4 @@
-Please read our Petuum Bösen/Strads [documentation](http://docs.petuum.com/) first.
+Please read our PMLS Bösen/Strads [documentation](http://docs.petuum.com/) first.
 
 Quick start:
 
