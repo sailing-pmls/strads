@@ -184,7 +184,8 @@ void create_star_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi
       assert(id == 1);
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
 
 
@@ -199,7 +200,8 @@ void create_star_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi
       get_id_msg(*port_r, rank, &id, buffer, MAX_BUFFER);      
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
 
     strads_msg(ERR, "[Coordinator @@@@@] finish worker send port confirm \n");
@@ -216,7 +218,8 @@ void create_star_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi
       assert(id == 1);
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
 
 
@@ -231,7 +234,8 @@ void create_star_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi
       get_id_msg(*port_r, rank, &id, buffer, MAX_BUFFER);      
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
        
 
@@ -429,7 +433,8 @@ void create_star_ethernet_singlemach(sharedctx *pshctx, zmq::context_t &contextz
       assert(id == 1);
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
     
     for(unsigned int i=0; i<pshctx->worker_sendportmap.size(); i++){
@@ -440,7 +445,8 @@ void create_star_ethernet_singlemach(sharedctx *pshctx, zmq::context_t &contextz
       get_id_msg(*port_r, rank, &id, buffer, MAX_BUFFER);      
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
 
     for(unsigned int i=0; i<pshctx->scheduler_recvportmap.size(); i++){
@@ -450,7 +456,8 @@ void create_star_ethernet_singlemach(sharedctx *pshctx, zmq::context_t &contextz
       assert(id == 1);
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
     
     for(unsigned int i=0; i<pshctx->scheduler_sendportmap.size(); i++){
@@ -461,7 +468,8 @@ void create_star_ethernet_singlemach(sharedctx *pshctx, zmq::context_t &contextz
       get_id_msg(*port_r, rank, &id, buffer, MAX_BUFFER);      
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
        
   }else if(mrole == mrole_worker or mrole == mrole_scheduler ){
@@ -640,7 +648,8 @@ void create_substar_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int 
       assert(id == 1);
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
 
 
@@ -653,7 +662,8 @@ void create_substar_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int 
       get_id_msg(*port_r, rank, &id, buffer, MAX_BUFFER);      
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
        
 
@@ -977,7 +987,9 @@ void worker_ringwakeup(sharedctx *pshctx, int dackport, int rank){
     strads_msg(ERR, "[ Worker Rank : %d ]  GOT MESSAGE recvport (%p) DONE DONE \n", rank, port_r);
     cpps_sendmore(*port_r, (void *)&id, 4);
     string msg1("Go");
-    cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+    //    cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+    cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
+
     get_single_msg(*sendport, rank, buffer, MAX_BUFFER);
     strads_msg(OUT, "[Worker Rank %d] got confirm for SEND PORT \n", rank);
 }
@@ -997,7 +1009,8 @@ void coordinator_ringwakeup(sharedctx *pshctx, int dackport, int rank){
     strads_msg(ERR, "[ Coordinator Rank : %d ]  GOT MESSAGE recvport (%p) DONE DONE \n", rank, port_r);
     cpps_sendmore(*port_r, (void *)&id, 4);
     string msg1("Go");
-    cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+    //    cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+    cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     get_single_msg(*sendport, rank, buffer, MAX_BUFFER);
     strads_msg(OUT, "[Coordinator Rank %d] got confirm for SEND PORT \n", rank);
 }
@@ -1294,7 +1307,8 @@ void worker_ringwakeup_aux(sharedctx *pshctx, int dackport, int rank){
     strads_msg(ERR, "[ Worker Rank : %d ]  GOT MESSAGE recvport (%p) DONE DONE \n", rank, port_r);
     cpps_sendmore(*port_r, (void *)&id, 4);
     string msg1("Go");
-    cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+    //    cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+    cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     get_single_msg(*sendport, rank, buffer, MAX_BUFFER);
     strads_msg(OUT, "[Worker Rank %d] got confirm for SEND PORT \n", rank);
 }
@@ -1314,7 +1328,8 @@ void coordinator_ringwakeup_aux(sharedctx *pshctx, int dackport, int rank){
     strads_msg(ERR, "[ Coordinator Rank : %d ]  GOT MESSAGE recvport (%p) DONE DONE \n", rank, port_r);
     cpps_sendmore(*port_r, (void *)&id, 4);
     string msg1("Go");
-    cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+    //    cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+    cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     get_single_msg(*sendport, rank, buffer, MAX_BUFFER);
     strads_msg(OUT, "[Coordinator Rank %d] got confirm for SEND PORT \n", rank);
 }
@@ -1422,7 +1437,8 @@ void create_ps_star_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int 
       assert(id == 1);
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
 
     strads_msg(ERR, "[PS @@@@@] finish worker recv port confirm \n");
@@ -1435,7 +1451,8 @@ void create_ps_star_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int 
       get_id_msg(*port_r, rank, &id, buffer, MAX_BUFFER);      
       cpps_sendmore(*port_r, (void *)&id, 4);
       string msg1("Go");
-      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      //      cpps_send(*port_r, (void *)msg1.c_str(), MAX_BUFFER-1);   
+      cpps_send(*port_r, (void *)msg1.c_str(), strlen(msg1.c_str()));   
     }
     strads_msg(ERR, "[PS @@@@@] finish worker send port confirm \n");
       
