@@ -2,7 +2,7 @@
 import os
 import sys
 
-machfile = ['./multi.vm']
+machfile = ['./singlemach.vm']
 nodes=['6']
 
 # data setting 
