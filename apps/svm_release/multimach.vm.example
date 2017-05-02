@@ -1,3 +1,4 @@
+# do not use "127.0.0.1" or "localhost" as ip address for multi machine experiment  
 ip-address-0
 ip-address-1
 ip-address-2
