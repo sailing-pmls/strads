@@ -93,7 +93,10 @@ char *util_path2string(const char *fn);
 class sharedctx;
 #include <strads/platform/platform-common.hpp>
 
-void util_find_validip(std::string &validip, sharedctx &shctx);
+void util_find_mach_validip(std::string &validip, sharedctx &shctx, bool localhostonly);
+
+bool util_check_localhostonly(sharedctx &shctx, int mpi_size);
+
 void util_get_high_priority(void);
 void util_numa_spec(int rank);
 long util_get_number_cores(void);

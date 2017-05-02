@@ -915,6 +915,8 @@ public:
 
   void initNetwork(void){
 
+    assert(0);
+    #if 0 
     sysparam *params = m_sp;
     int mpi_size = m_mpi_size;
     int mpi_rank = rank;
@@ -971,6 +973,8 @@ public:
     MPI_Barrier(MPI_COMM_WORLD);
     LOG(INFO) <<  " EXIT : in stards_init function MPI RANK :  " << mpi_rank; 
     strads_msg(ERR, "EXIT strads init (%d) role(%d) \n", rank, m_mrole);
+    #endif
+    
   }
 
 }; // sharectx 

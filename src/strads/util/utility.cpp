@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <vector>
 #include <stdlib.h>
+#include <string>
+#include <fstream>
 
 #include <strads/util/utility.hpp>
 #include <strads/include/common.hpp>
@@ -220,20 +222,77 @@ void util_get_tokens(const string& str, const string& delim, vector<string>& tok
 }
 
 
-void util_find_validip(string &validip, sharedctx &shctx){
+bool util_check_localhostonly(sharedctx &shctx, int mpi_size){
+
+  vector<string> nodes; // ip addresses from machine file before reorganization  
+  ifstream in(shctx.m_sp->m_machfile);
+  if(!in.is_open()){
+    ASSERT(false, "node file not open");
+  }
+  
+  string delim(CONF_FILE_DELIMITER);
+  string linebuf;
+ 
+  while(getline(in, linebuf)){
+    vector<string>parts;
+    util_get_tokens(linebuf, delim, parts);
+    if(!parts[0].compare("#"))  // skip comment line
+      continue;
+    assert(parts.size() == 1);
+    nodes.push_back(parts[0]);
+  }
+
+  bool ret(false);
+  if(mpi_size == nodes.size())
+    ret = true;
+
+  if(ret)
+    strads_msg(OUT, "@@ All IP addresses in the machine file are 127.0.0.1 - single node version \n");    
+  
+  return ret; 
+}
+
+void util_find_mach_validip(string &validip, sharedctx &shctx, const bool localhostonly){
   vector<string>iplist;
   get_iplist(iplist); // get all local abailable ip address 
   // try to find matching IP with any IP in the user input. 
   // Assumption : user provide correct IP addresses 
   // TODO: add more user-error proof code
+  
+  vector<string> nodes; // ip addresses from machine file before reorganization  
+  // read machinefile
+  ifstream in(shctx.m_sp->m_machfile);
+  if(!in.is_open()){
+    ASSERT(false, "node file not open");
+  }
+
+  string delim(CONF_FILE_DELIMITER);
+  string linebuf;
+ 
+  while(getline(in, linebuf)){
+    vector<string>parts;
+    util_get_tokens(linebuf, delim, parts);
+    if(!parts[0].compare("#"))  // skip comment line
+      continue;
+    assert(parts.size() == 1);
+    nodes.push_back(parts[0]);
+  }
+  
+  // nodes:
   for(auto const &p : iplist){
-    for(auto const np : shctx.nodes){
+    if(!localhostonly){
+      if(p.compare(string("127.0.0.1")) == 0)
+	continue; // skip 127.0.0.1, STRADS will not use 127.0.0.1 
+    }
+    
+    for(auto const &np : nodes){
       //      cout << "ip from node file " << np.second->ip << endl;
-      if(!np.second->ip.compare(p)){
+      if(!np.compare(p)){
 	validip.append(p);
 	return;
       }
     }    
+
   }
 
   strads_msg(ERR, "fatal: all local ip address does not match any of ip address in the node file. check node conf file\n");

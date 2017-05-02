@@ -36,13 +36,16 @@ sharedctx *strads_init(int argc, char **argv){
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
   assert(mpi_size < MAX_MACHINES);
+
+
+
+
+
   sysparam *params = pi_initparams(argc, argv, mpi_rank); // store system parameters and user parameters
   sharedctx *pshctx = new sharedctx(mpi_rank, params);  
 
   pshctx->m_mpi_size = mpi_size;
-
   assert(pshctx->m_sp->m_machfile.size() > 0); // no machine file, no way to set up
-
   assert(((pshctx->m_sp->m_nodefile.size() > 0) and // all configuration files 
 	  (pshctx->m_sp->m_linkfile.size() > 0) and
 	  (pshctx->m_sp->m_rlinkfile.size() > 0)) 
@@ -52,11 +55,75 @@ sharedctx *strads_init(int argc, char **argv){
 	  (pshctx->m_sp->m_rlinkfile.size() == 0))
 	 );
 
+
+  LOG(INFO) << " START INITI " << mpi_rank << std::endl;
+  
+  // reorganize machine file to be ineepdnent of MPIRUN process mapping
+  bool localhostonly(false);
+  localhostonly = util_check_localhostonly(*pshctx, mpi_size);
+  
+  // check if all IPs of machine file consists of 127.0.0.1 
+  // and set localhostonly boolean variable correctnly 
+  
+  string validip;
+  util_find_mach_validip(validip, *pshctx, localhostonly);
+  
+  //  write_myip(mpi_rank, 
+  mkdir("./conf", 0777);
+  LOG(INFO) << "Rank (" << mpi_rank << ")'s IP found in node file " << validip << endl;
+
+  char *nodeip = (char *)calloc(sizeof(char), 128);  
+  sprintf(nodeip,   "./conf/nodeip_m%d", mpi_rank);
+  FILE *nodeipfp = fopen(nodeip, "wt");
+  fprintf(nodeipfp, "%s", validip.c_str());
+  fclose(nodeipfp);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(mpi_rank == 0){
+    // collect and save ./conf/singlemach.vm file
+
+    char *nodeip = (char *)calloc(sizeof(char), 128);      
+    sprintf(nodeip,   "./conf/machfile.vm");
+    FILE *machfilefp = fopen(nodeip, "wt");
+       
+    for(int i(0); i < mpi_size; i++){
+      char *nodeip = (char *)calloc(sizeof(char), 128);  
+      sprintf(nodeip,   "./conf/nodeip_m%d", i);
+
+      string fn(nodeip);
+      ifstream in(fn);
+      
+      if(!in.is_open()){
+	ASSERT(false, "node file not open");
+      }
+      string delim(CONF_FILE_DELIMITER);
+      string linebuf;
+
+      while(getline(in, linebuf)){
+	vector<string>parts;
+	util_get_tokens(linebuf, delim, parts);
+	if(!parts[0].compare("#"))  // skip comment line
+	  continue;
+	assert(parts.size() == 1);
+	fprintf(machfilefp, "%s\n", parts[0].c_str());	
+      }
+
+      
+      
+    }
+    fclose(machfilefp);        
+  } // mpi_rank == 0 
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+
+  
   if((pshctx->m_sp->m_nodefile.size() == 0) and // no configuration file  
      (pshctx->m_sp->m_linkfile.size() == 0) and
      (pshctx->m_sp->m_rlinkfile.size() == 0)){      
-
-    mkdir("./conf", 0777);
+   
+    pshctx->m_sp->m_machfile = std::string("./conf/machfile.vm");
+   
     char *node = (char *)calloc(sizeof(char), 128);
     char *starl = (char *)calloc(sizeof(char), 128);
     char *ringl = (char *)calloc(sizeof(char), 128);
@@ -81,8 +148,12 @@ sharedctx *strads_init(int argc, char **argv){
   pshctx->bind_params(params);
   pshctx->fork_machagent();
   parse_nodefile(params->m_nodefile, *pshctx);
-  string validip;
-  util_find_validip(validip, *pshctx);
+
+
+
+
+	     //  string validip;
+	     //  util_find_validip(validip, *pshctx);
   LOG(INFO) << "Rank (" << mpi_rank << ")'s IP found in node file " << validip << endl;
 
   if((unsigned)mpi_size != pshctx->nodes.size()){
@@ -152,7 +223,9 @@ int Strads::mpisize_ = -1;
 sysparam *Strads::param_ = NULL;
 
 void initStrads(int argc, char **argv){
-  int mpi_rank, mpi_size;
+
+#if 0 
+int mpi_rank, mpi_size;
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -160,8 +233,9 @@ void initStrads(int argc, char **argv){
   sysparam *params = pi_initparams(argc, argv, mpi_rank); // store system parameters and user parameters
   Strads::setStrads(mpi_rank, params, mpi_size);
   Strads &ret1 = Strads::getStradsInstance();
-
-
-
   return;
+#endif
+assert(0);
+
+
 }
