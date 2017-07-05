@@ -67,6 +67,7 @@ void process_single_entry(pendjob *job, std::unique_ptr<Trainer> &trainer){
   int *topic = (int *)calloc(sizeof(int), FLAGS_num_topic);
   int *cnt = (int *)calloc(sizeof(int), FLAGS_num_topic);
   wpacket *entry = (wpacket *)job->ptr;
+
   int widx = entry->widx;
   int size = entry->size;
   for(int i=0; i<size; i++){
@@ -114,7 +115,12 @@ void process_single_entry(pendjob *job, std::unique_ptr<Trainer> &trainer){
       entry->cnt[i] = cnt[i];
     }
   }
+
   free(karray);
+
+  free(cnt);
+  free(topic);
+
 }
 
 void circulate_table(sharedctx *ctx, vector<wtopic> &wtable, int mywords, vector<int> &mybucket, std::unique_ptr<Trainer> &trainer){
