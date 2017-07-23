@@ -35,7 +35,7 @@ public:
 		if(ctx->m_mrole  == mrole_worker){
 			relayer = std::thread(&ringio::relayer_async, this);		
 		} else if (ctx->m_mrole  == mrole_coordinator){
-			relayer = std::thread(&ringio::sinkthread, this);					
+			relayer = std::thread(&ringio::cdthread, this);					
 		} else if (ctx->m_mrole  == mrole_scheduler){
 			// do nothing temporarily 
 		}		
@@ -141,7 +141,7 @@ public:
 		return; // join the main thread
 	}
 
-     	void sinkthread(void){		
+     	void cdthread(void){		
 		while(1){
 			void *recv = NULL;
 			int len=-1;
@@ -149,15 +149,15 @@ public:
 			if(recv != NULL){
 				fspacket *pkt = (fspacket *)recv;
 				if(seqno % 1000000 == 0)
-					strads_msg(OUT, " Coordinator Rank (%d) sink message seq no (%ld) pkt-seqno(%lu) pkt-buflen(%lu) elaptime sec : %lf\n",
+					strads_msg(OUT, " Coordinator Rank (%d) process message seq no (%ld) pkt-seqno(%lu) pkt-buflen(%lu) elaptime sec : %lf\n",
 						   ctx->rank, seqno, pkt->seqno, pkt->buflen, (timenow() - starttime)/1000000.0);
 
 				assert(seqno == pkt->seqno);				
 				rcvmsg++;
 				seqno++;				
 				free((char *)recv);
-				if(pkt->buflen == 0){ // if all lines are circulated, stop set stoprelay to true and quit sink thread 
-					strads_msg(INF, " SINK EXIT Coordinator Rank (%d) sink message seqno(%ld) pkt-seqno(%lu) pkt-buflen(%lu)\n",
+				if(pkt->buflen == 0){ // if all lines are circulated, stop set stoprelay to true and quit cd thread 
+					strads_msg(INF, " ring CD thread at Coordinator rank(%d) finish ringio seqno(%ld) pkt-seqno(%lu) pkt-buflen(%lu)\n",
 						   ctx->rank, seqno, pkt->seqno, pkt->buflen);
 					flag_mutex.lock();
 					stoprelay = true;
