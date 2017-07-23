@@ -27,6 +27,8 @@
 #include <strads/netdriver/comm.hpp>
 #include <strads/netdriver/zmq/zmq-common.hpp>
 #include <strads/ds/dshard.hpp>
+//#include <queue>
+
 
 sharedctx *strads_init(int argc, char **argv);
 void *process_common_system_cmd(sharedctx *ctx, mbuffer *mbuf, context *recv_ctx, context *send_ctx, bool *tflag);
@@ -81,6 +83,10 @@ public:
     m_ringtoken_send = IHWM;
     m_ringtoken_recv = 0;
 
+    m_ringtoken_send_sch = IHWM;
+    m_ringtoken_recv_sch = 0;
+
+    
     ps_callback_func = NULL;
     ps_server_pgasyncfunc=NULL;
     ps_server_putsyncfunc=NULL;
@@ -121,6 +127,10 @@ public:
     m_ringtoken_send = IHWM;
     m_ringtoken_recv = 0;
 
+    m_ringtoken_send_sch = IHWM;
+    m_ringtoken_recv_sch = 0;
+
+    
     ps_callback_func = NULL;
     ps_server_pgasyncfunc=NULL;
     ps_server_putsyncfunc=NULL;
@@ -720,6 +730,10 @@ public:
   int64_t m_ringtoken_send;
   int64_t m_ringtoken_recv;
 
+
+  int64_t m_ringtoken_send_sch;
+  int64_t m_ringtoken_recv_sch;
+
   void *ring_asyncrecv_aux(void){
     assert(0);
     void *ret = NULL;
@@ -820,6 +834,33 @@ public:
     return buffer;
   } // ring_asyncrecv 
 
+
+  void *ring_async_send_aux(void * buffer, long blen, int addportid){
+    assert(buffer != NULL);
+    assert(m_mrole != mrole_worker);
+    pthread_mutex_lock(&m_ringtoken_send_lock);
+    if(m_ringtoken_send_sch == 0){
+      while(1){
+	void *recv = NULL;      
+	recv = ring_recvportmap[rackport+addportid]->ctx->ring_pull_entry_inq();	
+	if(recv != NULL){
+	  m_ringtoken_send_sch = IHWM;	    
+	  break;
+	}else{
+	  pthread_mutex_unlock(&m_ringtoken_send_lock);
+	  return NULL;
+	}
+      }
+    }
+    ring_sendportmap[rdataport+addportid]->ctx->ring_push_entry_outq((void *)buffer, blen);
+    m_ringtoken_send_sch--;
+    assert(m_ringtoken_send_sch >= 0);
+    pthread_mutex_unlock(&m_ringtoken_send_lock);
+    return buffer;
+  } // ring_asyncrecv 
+
+
+	
   void *ring_asyncrecv_aux(int *rlen){
     assert(m_mrole != mrole_scheduler);
     void *ret = NULL;
@@ -840,6 +881,29 @@ public:
     return ret;
   } // ring_asyncrecv 
 
+
+  void *ring_asyncrecv_aux(int *rlen, int addportid){
+    assert(m_mrole != mrole_worker);
+    void *ret = NULL;
+    pthread_mutex_lock(&m_ringtoken_recv_lock);
+    assert(m_ringtoken_recv_sch <= IHWM);
+    ret = ring_recvportmap[rdataport + addportid]->ctx->ring_pull_entry_inq(rlen);
+    if(ret != NULL){
+      m_ringtoken_recv_sch++;
+      assert(m_ringtoken_recv_sch <= IHWM);
+      if(m_ringtoken_recv_sch == IHWM){	
+	void *tmpbuf = (void *)calloc(32, sizeof(char));
+	sprintf((char *)tmpbuf, "TOKEN");
+	ring_sendportmap[rackport+addportid]->ctx->ring_push_entry_outq((void *)tmpbuf, 32);
+	m_ringtoken_recv_sch = 0;
+      }
+    }      
+    pthread_mutex_unlock(&m_ringtoken_recv_lock);
+    return ret;
+  } // ring_asyncrecv 
+
+
+	
   std::map<int, mnode *> ps_nodes; // machine nodes for ps configuration 
   std::map<int, mlink *> ps_links; // link for ps configuration 
 
@@ -977,6 +1041,9 @@ public:
     
   }
 
+	//	std::queue ioqueue; // IO queue for ring IO stream  
+
+	
 }; // sharectx 
 
 

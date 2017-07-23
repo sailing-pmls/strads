@@ -358,5 +358,7 @@ void create_ring_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi
 void create_ringworker_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi_size, std::string &cip);
 void create_ringworker_ethernet_aux(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi_size, std::string &cip);
 
+void create_ringscheduler_ethernet_aux(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi_size, std::string &cip);
+
 void create_ps_star_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi_size, std::string &cip, int server_rank);
 // create ring on worker and coordinator. 

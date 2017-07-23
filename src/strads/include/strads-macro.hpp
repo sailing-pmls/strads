@@ -49,6 +49,9 @@
 // regardless of the number of ZMQ ports 
 //#define NO_WEIGHT_SAMPLING
 
-#define MAX_ZMQ_HWM (5000)
+//#define MAX_ZMQ_HWM (5000) // default setting
+
+#define MAX_ZMQ_HWM (50000)
+
 #define rdataport  0
 #define rackport   1

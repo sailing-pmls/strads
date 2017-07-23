@@ -114,11 +114,19 @@ int make_cfgfile(sharedctx *ctx, string &machfn, string &nodefn, string &starfn,
   }
   fclose(fp);
 
+
+
+
+
+
   // generate ring link file 
   fp = fopen(ringfn.c_str(), "wt");
   assert(fp);
   int workers = ctx->m_worker_machines;
   int schedulers = ctx->m_sched_machines;
+
+
+#if 0 
   for(int i=workers; i<workers+schedulers; i++){
     fprintf(fp, "%d %d %d %d\n", i, srcport++, cdrank, dstport++);
   }
@@ -126,7 +134,32 @@ int make_cfgfile(sharedctx *ctx, string &machfn, string &nodefn, string &starfn,
   for(int i=workers; i<workers+schedulers; i++){
     fprintf(fp, "%d %d %d %d\n", cdrank, srcport++, i, dstport++);
   }
+#else
 
+  fprintf(fp, "%d %d %d %d\n", cdrank, srcport++, workers, dstport++); // workers : first scheduler         
+  for(int i=workers; i < workers+schedulers; i++){
+    if(i < workers+schedulers - 1){
+      fprintf(fp, "%d %d %d %d\n", i, srcport++, i+1, dstport++);        
+    }else{
+      fprintf(fp, "%d %d %d %d\n", i, srcport++, cdrank, dstport++);        
+    }
+  }
+
+  for(int i=workers; i < workers + schedulers; i++){
+	  if(i == workers ){ // first scheduler 
+      fprintf(fp, "%d %d %d %d\n", i, srcport++, cdrank, dstport++);        
+    }else{
+      fprintf(fp, "%d %d %d %d\n", i, srcport++, i-1, dstport++);        
+    }
+  }
+  fprintf(fp, "%d %d %d %d\n", cdrank, srcport++, workers+schedulers-1, dstport++);        
+
+
+
+  #endif 
+
+
+  
   fprintf(fp, "%d %d %d %d\n", cdrank, srcport++, 0, dstport++);        
   for(int i=0; i < workers; i++){
     if(i < workers - 1){
@@ -176,6 +209,17 @@ int make_cfgfile(sharedctx *ctx, string &machfn, string &nodefn, string &starfn,
   //MPI_Barrier(MPI_COMM_WOLRD);
   MPI_Barrier(MPI_COMM_WORLD);
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 #if 0 

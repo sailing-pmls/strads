@@ -177,8 +177,16 @@ sharedctx *strads_init(int argc, char **argv){
   if(params->m_topology.compare("star") == 0){
     parse_starlinkfile(params->m_linkfile, *pshctx);
     create_star_ethernet(pshctx, *contextzmq, mpi_size, pshctx->nodes[mpi_size-1]->ip);
+
     parse_starlinkfile(params->m_rlinkfile, *pshctx);
+
+
     create_ringworker_ethernet_aux(pshctx, *contextzmq, mpi_size, pshctx->nodes[mpi_size-1]->ip);
+
+
+    create_ringscheduler_ethernet_aux(pshctx, *contextzmq, mpi_size, pshctx->nodes[mpi_size-1]->ip);    
+
+    
     LOG(INFO) << "Star Topology is cretaed with " << mpi_size << " machines (processes) " << endl;
       
   }else{

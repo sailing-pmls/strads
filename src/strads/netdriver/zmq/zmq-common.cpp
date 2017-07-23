@@ -535,7 +535,7 @@ void create_star_ethernet_singlemach(sharedctx *pshctx, zmq::context_t &contextz
 }
 
 void create_ring_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi_size, string &cip)
-{
+{	
   create_substar_ethernet(pshctx, contextzmq,  mpi_size, cip);
   create_ringworker_ethernet(pshctx, contextzmq,  mpi_size, cip);
   LOG(INFO) << "@@@@@@@@@@@@@@ Ring Created : rank " << pshctx->rank << endl;
@@ -754,7 +754,7 @@ void create_substar_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int 
 void create_ringworker_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi_size, string &cip)
 {
 
-  strads_msg(ERR, "\n\n\n[ Ring worker ring ] start\n");
+  strads_msg(ERR, "\n\n\n[ Ring worker ring ] start -- create_ringworker_ethernet\n");
 
   int hwm;
   size_t hwmsize = sizeof(hwm);
@@ -1045,7 +1045,7 @@ void coordinator_ringwakeup(sharedctx *pshctx, int dackport, int rank){
 void create_ringworker_ethernet_aux(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi_size, string &cip)
 {
 
-  strads_msg(ERR, "\n\n\n[ Ring worker ring ] start\n");
+  strads_msg(ERR, "\n\n\n[ Ring worker ring ] start create_ringworker_ethernet_aux \n");
 
   int hwm;
   size_t hwmsize = sizeof(hwm);
@@ -1150,6 +1150,7 @@ void create_ringworker_ethernet_aux(sharedctx *pshctx, zmq::context_t &contextzm
 
     assert(pshctx->ring_sendportmap.size() == 2);
     assert(pshctx->ring_recvportmap.size() == 2);
+
     coordinator_ringwakeup_aux(pshctx, rdataport, rank);
     coordinator_ringwakeup_aux(pshctx, rackport, rank);
   }else if(mrole == mrole_worker ){
@@ -1297,10 +1298,17 @@ void worker_ringwakeup_aux(sharedctx *pshctx, int dackport, int rank){
     char *buffer = (char *)calloc(sizeof(char), MAX_BUFFER);
     sprintf(buffer, "Heart Beat from rank %d", rank);
     string msg(buffer);
+
+
+    assert(pshctx->ring_sendportmap.find(dackport) != pshctx->ring_sendportmap.end()); 
+    
     zmq::socket_t *sendport = pshctx->ring_sendportmap[dackport]->ctx->m_zmqsocket;
     cpps_send(*sendport, (void *)msg.c_str(), strlen(msg.c_str()));    
     printf("COORDINATOR Rank(%d) Send HB to SEND PORT ptr -- socket(%p) -- Sending is DONE  \n", rank, sendport);
     int id = 1;
+
+    assert(pshctx->ring_recvportmap.find(dackport) != pshctx->ring_recvportmap.end()); 
+    
     zmq::socket_t *port_r = pshctx->ring_recvportmap[dackport]->ctx->m_zmqsocket;       
     strads_msg(ERR, "[ Rank : %d ]  GOT MESSAGE recvport (%p) \n", rank, port_r);
     get_id_msg(*port_r, rank, &id, buffer, MAX_BUFFER);      
@@ -1543,3 +1551,291 @@ void create_ps_star_ethernet(sharedctx *pshctx, zmq::context_t &contextzmq, int 
 
   //  MPI_Barrier(MPI_COMM_WORLD); 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// for SCHEDULER RING
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// create_ringscheduler with coordinator.
+// create a ring on worker nodes and a a coordinator node  
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void create_ringscheduler_ethernet_aux(sharedctx *pshctx, zmq::context_t &contextzmq, int mpi_size, string &cip)
+{
+
+  strads_msg(ERR, "\n\n\n[ Ring SCHEDULER ring ] start create_ringscheduler_ethernet_aux \n");
+
+  int hwm;
+  size_t hwmsize = sizeof(hwm);
+  int rank = pshctx->rank;
+  int *idcnt_s = (int *)calloc(sizeof(int), MAX_MACH);
+  memset((void *)idcnt_s, 0x0, sizeof(int)*MAX_MACH);
+  int *idcnt_w = (int *)calloc(sizeof(int), MAX_MACH);
+  memset((void *)idcnt_w, 0x0, sizeof(int)*MAX_MACH);
+  mach_role mrole = pshctx->find_role(mpi_size);
+  char *tmpcstring = (char *)calloc(sizeof(char), 128);
+  int firstsched = pshctx->m_first_schedmach;
+  //int firstworker = pshctx->m_first_workermach;
+  int schedmach = pshctx->m_sched_machines;
+  int workermach = pshctx->m_worker_machines;;
+  int firstcoord = pshctx->m_first_coordinatormach; 
+
+  assert(firstcoord == (mpi_size -1));
+
+  if(mrole == mrole_coordinator){
+
+    for(auto const &p : pshctx->links){
+      mlink *tmp = p.second;
+
+      if( (p.second->srcnode >= 0 and p.second->srcnode < workermach) or // if worker related link, skip 
+	  (p.second->dstnode >= 0 and p.second->dstnode < workermach)){
+	continue;
+      }
+
+      // for receiving port
+      if(tmp->dstnode == pshctx->rank){
+	int dstport = tmp->dstport; 
+	int srcnode = tmp->srcnode;
+	zmq::socket_t *pport_s = new zmq::socket_t(contextzmq, ZMQ_ROUTER);
+	int sethwm = MAX_ZMQ_HWM;
+	pport_s->setsockopt(ZMQ_RCVHWM, &sethwm, sizeof(int)); 
+	sprintf(tmpcstring, "tcp://*:%d", dstport); 
+	pport_s->bind (tmpcstring); // open 5555 for all incomping connection      
+	pport_s->getsockopt(ZMQ_RCVHWM, (void *)&hwm, &hwmsize);
+	strads_msg(ERR, "@@@@@@@ Coordinator rank %d open a port%s FOR RECEIVE PORT -- ptr to zmqsocket(%p) HWM(%d)\n", 
+		   pshctx->rank, tmpcstring, pport_s, hwm);
+	mach_role dstmrole = pshctx->find_role(mpi_size, srcnode);
+	_ringport *recvport = new class _ringport;
+	recvport->ctx = new context((void*)pport_s, mrole_coordinator);
+	if(dstmrole == mrole_worker){
+	  assert(0);
+	}else if(dstmrole == mrole_scheduler){
+
+		if(srcnode == (schedmach + firstsched - 1)){
+			assert(pshctx->ring_recvportmap.size() >= 2);
+			pshctx->ring_recvportmap.insert(pair<int, _ringport*>(rdataport+2, recvport));	  	    
+		}else if(srcnode == firstsched){
+			assert(pshctx->ring_recvportmap.size() >= 2);
+			pshctx->ring_recvportmap.insert(pair<int, _ringport*>(rackport+2, recvport));	  	    
+		}else{
+			assert(0);
+		}
+	}else{
+		assert(0);
+	}
+      }
+
+      // for sending port
+      if(tmp->srcnode == pshctx->rank){
+	int dstnode = tmp->dstnode;
+	int dstport = tmp->dstport; 
+	zmq::socket_t *zport = new zmq::socket_t(contextzmq, ZMQ_DEALER);
+	int *identity = (int *)calloc(1, sizeof(int));
+	*identity = 1;
+	zport->setsockopt(ZMQ_IDENTITY, (void *)identity, sizeof(int));
+	int sethwm = MAX_ZMQ_HWM;
+	zport->setsockopt(ZMQ_SNDHWM, &sethwm, sizeof(int));
+	sprintf(tmpcstring, "tcp://%s:%d", pshctx->nodes[dstnode]->ip.c_str(), dstport); 
+	zport->connect (tmpcstring); // open 5555 for all incomping connection      
+	strads_msg(ERR, "Rank %d CONNECT a port%s FOR SEND PORT -- ptr to socket(%p) \n", 
+		   pshctx->rank, tmpcstring, zport);
+	mach_role srcmrole = pshctx->find_role(mpi_size, dstnode);
+	_ringport *sendport = new class _ringport;
+	sendport->ctx = new context((void*)zport, mrole_coordinator);
+
+	if(srcmrole == mrole_worker){
+	  assert(0);
+	}else if(srcmrole == mrole_scheduler){
+	  if(dstnode == (schedmach + firstsched-1)){
+	    assert(pshctx->ring_sendportmap.size() >= 2);
+	    pshctx->ring_sendportmap.insert(pair<int, _ringport*>(rackport+2, sendport));	  
+
+	  }else if(dstnode == firstsched){
+	    assert(pshctx->ring_sendportmap.size() >= 2);
+	    strads_msg(ERR, "coordinator put rdataport into sendport for dstnode %d (sendport[%p]\n", dstnode, sendport->ctx);
+	    pshctx->ring_sendportmap.insert(pair<int, _ringport*>(rdataport+2, sendport));	  
+	  }else{
+	    assert(0);
+	  }
+	}else{
+	  assert(0);
+	}
+      }
+    }
+
+
+    if(pshctx->ring_sendportmap.size() != 4){
+      strads_msg(ERR, "ctx->rank %d breaks rules :  pshctx->ring_sendportmap.size() : %ld \n", 
+		 pshctx->rank, pshctx->ring_sendportmap.size());
+    }
+
+    assert(pshctx->ring_sendportmap.size() == 4);
+    assert(pshctx->ring_recvportmap.size() == 4);
+
+    coordinator_ringwakeup_aux(pshctx, rdataport+2, rank);
+    coordinator_ringwakeup_aux(pshctx, rackport+2, rank);
+    
+  }else if(mrole == mrole_scheduler ){
+
+    //    int rcnt = 0;
+    //    int scnt = 0;
+    sleep(2);
+
+    for(auto const &p : pshctx->links){
+
+      mlink *tmp = p.second;
+      if( (p.second->srcnode >= 0 and p.second->srcnode < workermach) or // if scheduler related link, skip 
+	  (p.second->dstnode >= 0 and p.second->dstnode < workermach)){
+	continue;
+      }
+
+      // for receiving port
+      if(tmp->dstnode == pshctx->rank){
+	int dstport = tmp->dstport; 
+	int srcnode = tmp->srcnode;
+	zmq::socket_t *pport_s = new zmq::socket_t(contextzmq, ZMQ_ROUTER);
+	int sethwm = MAX_ZMQ_HWM;
+	pport_s->setsockopt(ZMQ_RCVHWM, &sethwm, sizeof(int)); 
+	sprintf(tmpcstring, "tcp://*:%d", dstport); 
+	pport_s->bind (tmpcstring); // open 5555 for all incomping connection      
+	pport_s->getsockopt(ZMQ_RCVHWM, (void *)&hwm, &hwmsize);
+	strads_msg(ERR, "@@@@@@@ SCHEDULER rank %d open a port%s FOR RECEIVE PORT -- ptr to zmqsocket(%p) HWM(%d)\n", 
+		   pshctx->rank, tmpcstring, pport_s, hwm);
+	//mach_role dstmrole = pshctx->find_role(mpi_size, srcnode);
+	_ringport *recvport = new class _ringport;
+	recvport->ctx = new context((void*)pport_s, mrole_coordinator);
+
+	if(pshctx->rank == firstsched){ // the first scheduler 
+	  if(srcnode == firstcoord){
+	    assert(pshctx->ring_recvportmap.size() < 2);
+	    pshctx->ring_recvportmap.insert(pair<int, _ringport*>(rdataport+2, recvport)); // for data port 	  
+	  }else{
+	    assert(pshctx->ring_recvportmap.size() < 2);
+	    pshctx->ring_recvportmap.insert(pair<int, _ringport*>(rackport+2, recvport)); // for data port 	  
+	  }
+	}else if(pshctx->rank == (firstsched+schedmach-1)){ // the last scheduler 
+	  if(srcnode == firstcoord){
+	    assert(pshctx->ring_recvportmap.size() < 2);
+	    pshctx->ring_recvportmap.insert(pair<int, _ringport*>(rackport+2, recvport)); // for data port 	  
+	  }else{
+	    assert(pshctx->ring_recvportmap.size() < 2);
+	    assert(srcnode == (pshctx->rank - 1));
+	    pshctx->ring_recvportmap.insert(pair<int, _ringport*>(rdataport+2, recvport)); // for data port 	  
+	  }
+	}else{ // workers between the first and last workers. 
+	  int rank = pshctx->rank;
+	  if(srcnode == (rank -1) ){
+	    assert(pshctx->ring_recvportmap.size() < 2);
+	    pshctx->ring_recvportmap.insert(pair<int, _ringport*>(rdataport+2, recvport)); // for data port 	  
+	  }else{
+	    assert(pshctx->ring_recvportmap.size() < 2);
+	    pshctx->ring_recvportmap.insert(pair<int, _ringport*>(rackport+2, recvport)); // for data port 	  
+	  }
+	}
+      }
+
+      // for sending port
+      if(tmp->srcnode == pshctx->rank){
+	int dstnode = tmp->dstnode;
+	int dstport = tmp->dstport; 
+	zmq::socket_t *zport = new zmq::socket_t(contextzmq, ZMQ_DEALER);
+	int *identity = (int *)calloc(1, sizeof(int));
+	*identity = 1;
+	zport->setsockopt(ZMQ_IDENTITY, (void *)identity, sizeof(int));
+	int sethwm = MAX_ZMQ_HWM;
+	zport->setsockopt(ZMQ_SNDHWM, &sethwm, sizeof(int));
+
+	//sprintf(tmpcstring, "tcp://%s:%d", cip.c_str(), dstport); 
+	sprintf(tmpcstring, "tcp://%s:%d", pshctx->nodes[dstnode]->ip.c_str(), dstport); 
+	zport->connect (tmpcstring); // open 5555 for all incomping connection      
+	strads_msg(ERR, "Rank %d CONNECT a port%s FOR SEND PORT -- ptr to socket(%p) \n", 
+		   pshctx->rank, tmpcstring, zport);
+	_ringport *recvport = new class _ringport;
+	recvport->ctx = new context((void*)zport, mrole);
+
+	if(pshctx->rank == firstsched){ // the first worker 
+	  if(dstnode == firstcoord){
+	    assert(pshctx->ring_sendportmap.size() < 2);
+	    pshctx->ring_sendportmap.insert(pair<int, _ringport*>(rackport + 2 , recvport));	  
+	  }else{
+	    assert(pshctx->ring_sendportmap.size() < 2);
+	    assert(dstnode == (pshctx->rank +1));
+	    pshctx->ring_sendportmap.insert(pair<int, _ringport*>(rdataport + 2, recvport));	  
+	  }
+	}else if(pshctx->rank == (firstsched + schedmach-1)){ // the last worker 
+	  if(dstnode == firstcoord){
+	    assert(pshctx->ring_sendportmap.size() < 2);
+	    pshctx->ring_sendportmap.insert(pair<int, _ringport*>(rdataport + 2, recvport));	  
+	  }else{
+	    assert(pshctx->ring_sendportmap.size() < 2);
+	    assert(dstnode == (pshctx->rank - 1));
+	    pshctx->ring_sendportmap.insert(pair<int, _ringport*>(rackport+2 , recvport));	  
+	  }
+	}else{ // workers between the first and last workers. 
+	  int rank = pshctx->rank;
+	  if(dstnode == (rank + 1) ){
+	    assert(pshctx->ring_sendportmap.size() < 2);
+	    pshctx->ring_sendportmap.insert(pair<int, _ringport*>(rdataport + 2 , recvport));	  
+	  }else{
+
+	    //	    if(pshctx->ring_recvportmap.size() >= 2){
+	    strads_msg(ERR, "FATAL : Rank(%d)  (%ld)   src(%d)  dst(%d)\n", 
+		       pshctx->rank,
+		       pshctx->ring_sendportmap.size(), 
+		       p.second->srcnode, 
+		       p.second->dstnode);   
+	    //	    }	    
+	    assert(pshctx->ring_sendportmap.size() < 2);
+	    assert(dstnode == (rank-1));
+	    pshctx->ring_sendportmap.insert(pair<int, _ringport*>(rackport +2 , recvport));	  
+	  }
+	}
+      }
+      
+    }
+    
+    strads_msg(ERR, " rank(%d) ringscheduler scheduler routine : recv port size %lu    send port size : %lu \n",
+	       pshctx->rank, pshctx->ring_recvportmap.size(), pshctx->ring_sendportmap.size());
+   
+    for(auto p : pshctx->ring_sendportmap){
+	    strads_msg(ERR, " rank (%d) SEND PORT AT SCHEDULER : id (%d) \n", pshctx->rank, p.first); 	    
+    }
+
+    for(auto p : pshctx->ring_recvportmap){
+	    strads_msg(ERR, " rank (%d) RECV PORT AT SCHEDULER : id (%d) \n", pshctx->rank, p.first); 	    
+    }
+
+    assert(pshctx->ring_sendportmap.size() == 2);
+    assert(pshctx->ring_recvportmap.size() == 2);    
+    
+    worker_ringwakeup_aux(pshctx, rdataport+2, rank);
+    worker_ringwakeup_aux(pshctx, rackport+2, rank);
+
+  }else if(mrole == mrole_worker ){
+    // do noting: schedulr
+  }else{
+    strads_msg(ERR, "[Fatal: rank %d] MACHINE TYPE IS NOT ASSIGNED YET \n", rank);
+    assert(0);
+  }
+
+  MPI_Barrier(MPI_COMM_WORLD); 
+}
+
+
+
+
