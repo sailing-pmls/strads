@@ -37,6 +37,23 @@ int cd_train::read_partition(const std::string &fn, col_vspmat &matrix, long mac
   return 0;
 }
 
+// test 
+int cd_train::read_partition_ring(sharedctx *ctx, const std::string &fn, col_vspmat &matrix, long machines, long mid){
+
+  LOG(INFO) << "  Input file name : " << fn << endl;
+  LOG(INFO) << "  matrix.row_size () : " << matrix.row_size() << "matrix.col_size(): " << matrix.col_size() << endl;   
+
+  matrix.set_range(false, 0, matrix.col_size()-1); // column matrix's column range (start - end) Inclusive 
+  const cont_range row_range(0, matrix.row_size()-1, machines, mid); // use contiguous partitioning i.e. P0: 0 - 99 P1:100 - 199 P3: 200 - 299 
+  const cont_range col_range(0, matrix.col_size()-1, 1, 0);          // 1 : one chunk : so all ranges. 0 : dummy 
+
+  mmt_partial_read_ring<col_vspmat>(ctx, matrix, fn, mid, row_range, col_range); 
+  // read data chunk from mmt file correspond to row_range and col range  
+  LOG(INFO) << "  [worker mid : " << mid << " ] read nz entries :  " << matrix.allocatedentry() << endl; 
+  return 0;
+}
+
+
 
 int cd_train::read_col_partition(const std::string &fn, col_vspmat &matrix, long machines, long mid){
 
@@ -54,6 +71,22 @@ int cd_train::read_col_partition(const std::string &fn, col_vspmat &matrix, long
 }
 
 
+int cd_train::read_col_partition_ring(sharedctx *ctx, const std::string &fn, col_vspmat &matrix, long machines, long mid){
+
+  LOG(INFO) << "  Input file name : " << fn << endl;
+  LOG(INFO) << "  matrix.row_size () : " << matrix.row_size() << "matrix.col_size(): " << matrix.col_size() << endl;   
+
+  matrix.set_range(false, 0, matrix.col_size()-1); // column matrix's column range (start - end) Inclusive 
+  const cont_range row_range(0, matrix.row_size()-1, 1,0);         // 1 : one chunk : so all ranges. 0 : dummy 
+  const cont_range col_range(0, matrix.col_size()-1, machines, mid); // use contiguous partitioning i.e. P0: 0 - 99 P1:100 - 199 P3: 200 - 299 
+
+  mmt_partial_read_ring_scheduler<col_vspmat>(ctx, matrix, fn, mid, row_range, col_range); 
+  // read data chunk from mmt file correspond to row_range and col range  
+  LOG(INFO) << "  [scheduler mid : " << mid << " ] read nz entries :  " << matrix.allocatedentry() << endl; 
+  return 0;
+}
+
+
 int cd_train::read_partition(const std::string &fn, cas_array<double> &residual, long samples, long columns, long machines, long mid){
   LOG(INFO) << "  Input file name Y : " << fn << endl;
   const cont_range row_range(0, samples-1, machines, mid); // use contiguous partitioning i.e. P0: 0 - 99 P1:100 - 199 P3: 200 - 299 
@@ -61,6 +94,17 @@ int cd_train::read_partition(const std::string &fn, cas_array<double> &residual,
   mmt_partial_read_vector(residual, fn, mid, row_range, col_range); 
   return 0;
 }
+
+
+// test 
+int cd_train::read_partition_ring(sharedctx *ctx, const std::string &fn, cas_array<double> &residual, long samples, long columns, long machines, long mid){
+  LOG(INFO) << "  Input file name Y : " << fn << endl;
+  const cont_range row_range(0, samples-1, machines, mid); // use contiguous partitioning i.e. P0: 0 - 99 P1:100 - 199 P3: 200 - 299 
+  const cont_range col_range(0, columns-1, 1, 0);          // 1 : one chunk : so all ranges. 0 : dummy 
+  mmt_partial_read_vector_ring(ctx, residual, fn, mid, row_range, col_range); 
+  return 0;
+}
+
 
 void cd_train::put_entry_inq(void *cmd){
   std::unique_lock<std::mutex>lk(m_inqlock);

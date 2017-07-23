@@ -31,6 +31,7 @@
 #include "cd-util.hpp"
 #include "cd-train.hpp"
 
+#include <mpi.h>
 using namespace std;
 
 
@@ -222,6 +223,31 @@ void *coordinator_mach(void *arg){
   sharedctx *ctx = (sharedctx *)arg;
   strads_msg(ERR, "[coordinator-machine] rank(%d) boot up coordinator-mach \n", ctx->rank);
 
+  MPI_Group worker_group, sched_group, orig_group;
+  MPI_Comm worker_comm, sched_comm; // to enforce barrier for the coordinators and workers  
+  int workerc_ranks[ctx->m_worker_machines+1];
+  int schedc_ranks[ctx->m_sched_machines+1];
+
+  for(int i(0); i<ctx->m_worker_machines; ++i){
+	  workerc_ranks[i] = i;
+  }
+
+  for(int i(ctx->m_worker_machines); i<ctx->m_worker_machines + ctx->m_sched_machines; ++i){
+	  schedc_ranks[i - ctx->m_worker_machines] = i;
+  }
+
+  workerc_ranks[ctx->m_worker_machines] = ctx->m_sched_machines +  ctx->m_worker_machines;
+  schedc_ranks[ctx->m_sched_machines] = ctx->m_sched_machines +  ctx->m_worker_machines;
+
+  MPI_Comm_group(MPI_COMM_WORLD, &orig_group);
+  MPI_Group_incl(orig_group, ctx->m_worker_machines+1, workerc_ranks, &worker_group);
+  MPI_Comm_create(MPI_COMM_WORLD, worker_group, &worker_comm);
+
+ 
+  MPI_Group_incl(orig_group, ctx->m_sched_machines+1, schedc_ranks, &sched_group);
+  MPI_Comm_create(MPI_COMM_WORLD, sched_group, &sched_comm);
+
+  
   //  int thrds = ctx->m_params->m_sp->m_thrds_per_coordinator;
   int thrds = 1;
 
@@ -252,12 +278,24 @@ void *coordinator_mach(void *arg){
   //new  double *weights = (double *)calloc(ctx->m_params->m_sp->m_modelsize, sizeof(double));
   gweights = (double *)calloc(FLAGS_columns, sizeof(double));
   gbetadiff = (double *)calloc(FLAGS_columns, sizeof(double));
-  //new  _scheduler_start_remote(ctx, weights, ctx->m_params->m_sp->m_modelsize, false);     
+ 
+  ringio *ring4worker = new ringio(ctx, FLAGS_data_xfile);
+  ring4worker->reader();
+  delete ring4worker;
 
+  MPI_Barrier(worker_comm);
+  
+  ringio *ring4worker_res = new ringio(ctx, FLAGS_data_yfile);
+  ring4worker_res->reader();
+  delete ring4worker_res;
+      
   cdtask_assignment taskmap;
   make_scheduling_taskpartition(taskmap, FLAGS_columns, FLAGS_scheduler, FLAGS_threads_per_scheduler);
   // based on cont_range class's partitioning         
 
+  MPI_Barrier(worker_comm);
+
+  
   _scheduler_start_remote(ctx, gweights, FLAGS_columns, false, taskmap);     // START : just see if it's successful in memory allocation
   strads_msg(OUT, "[coordinator] Sends scheduler sanity checking call to all schedulers and activate them -- done\n");
 
@@ -272,9 +310,19 @@ void *coordinator_mach(void *arg){
   int64_t modelsize = FLAGS_columns;
   double lambda = FLAGS_lambda;
 
+
+
+
+  ringio4scheduler *ring4scheduler = new ringio4scheduler(ctx, FLAGS_data_xfile);
+  ring4scheduler->reader();
+
+  MPI_Barrier(sched_comm);
+  
+  
   _scheduler_start_remote(ctx, beta, FLAGS_columns, true, taskmap);     
   strads_msg(OUT, "[coordinator] Send initial weight information to all scheduler and make them ready for service -- done\n");
 
+  
   int rclock=0; // for round robin for scheduler 
   unordered_map<int64_t, idmvals_pair *>*retmap; 
   int64_t iteration=0;
@@ -711,6 +759,9 @@ int _get_tosend_machinecnt(sharedctx *ctx, machtype mtype){
 */
 void _scheduler_start_remote(sharedctx *ctx, double *weights, uint64_t wsize, bool rflag, cdtask_assignment &tmap){
 
+  strads_msg(OUT, "@@@@@@@@@@@@@@ _scheduler_start_remote is called \n");
+
+	
   int machines = _get_tosend_machinecnt(ctx, m_scheduler);
 
   strads_msg(OUT, "Machines : Scheduler %d \n", machines);
@@ -795,7 +846,7 @@ void _scheduler_start_remote(sharedctx *ctx, double *weights, uint64_t wsize, bo
       _send_to_scheduler(ctx, mbuf, sizeof(mbuffer), i); // once sent through com stack, it will be realeased
       //      while(1);
       usleep(100);
-    }
+    } // for ci 
 
     strads_msg(OUT, "@@@@@@ Coordinator waiting for ACK from scheduler mid (%d) \n", i);     
     // waiting for ACK from the scheduler. 
@@ -823,9 +874,9 @@ void _scheduler_start_remote(sharedctx *ctx, double *weights, uint64_t wsize, bo
 	strads_msg(ERR, "\t\t init weight receive ACK from sched_mid(%d)\n", i);
       }
       ctx->scheduler_recvportmap[i]->ctx->release_buffer((void *)buf);
-    }	
+    }
     strads_msg(OUT, "\tinit weight to sched_mid(%d) -- done \n", i);
-  }  
+  } // end of for(int i = 0; i < machines; i++){
 }
 
 void save_beta(double *beta, long coeff, string &fn){

@@ -40,7 +40,7 @@ DECLARE_double(infthreshold);
 DECLARE_bool(weight_sampling);
 DECLARE_bool(check_interference);
 DECLARE_string(algorithm);
-
+DECLARE_int64(nzcount);
 
 DECLARE_int64(schedulers); // from system layer
 

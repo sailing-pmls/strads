@@ -42,14 +42,17 @@ public:
   virtual void *aggregator(double *beta, double *betadiff, std::unordered_map<int64_t, idmvals_pair *> &retmap, sharedctx *ctx, 
 			   double lambda, long modelsize, long samples)=0;
 
-  virtual long get_threadid(void)=0;
-  static int read_partition(const std::string &fn, col_vspmat &matrix, long machines, long mid);   
-  // partition by row, but store them in column-major physical format
+	virtual long get_threadid(void)=0;
+	static int read_partition(const std::string &fn, col_vspmat &matrix, long machines, long mid);
+	static int read_partition_ring(sharedctx *ctx, const std::string &fn, col_vspmat &matrix, long machines, long mid);   
+	// partition by row, but store them in column-major physical format
 
-  static int read_col_partition(const std::string &fn, col_vspmat &matrix, long machines, long mid);   
+  static int read_col_partition(const std::string &fn, col_vspmat &matrix, long machines, long mid);
+	static int read_col_partition_ring(sharedctx *ctx, const std::string &fn, col_vspmat &matrix, long machines, long mid);   
   // partition by col and store them in column-major physical format
 
   static int read_partition(const std::string &fn, cas_array<double> &residual, long samples, long columns, long machines, long mid);
+	static int read_partition_ring(sharedctx *ctx, const std::string &fn, cas_array<double> &residual, long samples, long columns, long machines, long mid);
 
   void put_entry_inq(void *cmd);
   void *get_entry_inq_blocking();

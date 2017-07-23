@@ -7,6 +7,7 @@
 #include "cd-util.hpp"
 #include <strads/netdriver/comm.hpp>
 #include <strads/include/indepds.hpp>
+#include <mpi.h>
 
 using namespace std;
 
@@ -52,16 +53,47 @@ void *worker_mach(void *arg){
 
   sharedctx *ctx = (sharedctx *)arg;
   LOG(INFO) << "[worker " << ctx->rank << "]" << " boot up out of " << ctx->m_worker_machines << " workers " << endl; 
+
+  MPI_Group worker_group, sched_group, orig_group;
+  MPI_Comm worker_comm, sched_comm; // to enforce barrier for the coordinators and workers  
+  int workerc_ranks[ctx->m_worker_machines+1];
+  int schedc_ranks[ctx->m_sched_machines+1];
+
+  for(int i(0); i<ctx->m_worker_machines; ++i){
+	  workerc_ranks[i] = i;
+  }
+
+  for(int i(ctx->m_worker_machines); i<ctx->m_worker_machines + ctx->m_sched_machines; ++i){
+	  schedc_ranks[i - ctx->m_worker_machines] = i;
+  }
+
+  workerc_ranks[ctx->m_worker_machines] = ctx->m_sched_machines +  ctx->m_worker_machines;
+  schedc_ranks[ctx->m_sched_machines] = ctx->m_sched_machines +  ctx->m_worker_machines;
+
+  MPI_Comm_group(MPI_COMM_WORLD, &orig_group);
+  MPI_Group_incl(orig_group, ctx->m_worker_machines+1, workerc_ranks, &worker_group);
+  MPI_Comm_create(MPI_COMM_WORLD, worker_group, &worker_comm);
+ 
+  MPI_Group_incl(orig_group, ctx->m_sched_machines+1, schedc_ranks, &sched_group);
+  MPI_Comm_create(MPI_COMM_WORLD, sched_group, &sched_comm);
+
   // create sparse matrix instance and fill it 
   col_vspmat input_matrix(FLAGS_samples, FLAGS_columns);
-  cd_train::read_partition(FLAGS_data_xfile, input_matrix, ctx->m_worker_machines, ctx->rank);
-  cont_range row_range(0, FLAGS_samples-1, ctx->m_worker_machines, ctx->rank);
+  //  cd_train::read_partition(FLAGS_data_xfile, input_matrix, ctx->m_worker_machines, ctx->rank); 
 
+  strads_msg(OUT, "[ WORKER  %d ] start READ PARTITION from ring ", ctx->rank);
+  cd_train::read_partition_ring(ctx, FLAGS_data_xfile, input_matrix, ctx->m_worker_machines, ctx->rank); 
+  cont_range row_range(0, FLAGS_samples-1, ctx->m_worker_machines, ctx->rank);
   strads_msg(OUT,"[Worker Machine]  rank(%d) mid(%d) allocated entry (%ld) \n", ctx->rank, ctx->rank, input_matrix.allocatedentry());
+  MPI_Barrier(worker_comm);  
+
   // create atomic array for keeping residual 
   cas_array<double> residual(FLAGS_samples); // atomic double typed array: (c++11 STL-atomic does not support double/float type) 
   // *************************************************************************************** TODO : read Y data and fill out residual********** 
-  cd_train::read_partition(FLAGS_data_yfile, residual, FLAGS_samples, 1, ctx->m_worker_machines, ctx->rank);
+  //cd_train::read_partition(FLAGS_data_yfile, residual, FLAGS_samples, 1, ctx->m_worker_machines, ctx->rank);
+  cd_train::read_partition_ring(ctx, FLAGS_data_yfile, residual, FLAGS_samples, 1, ctx->m_worker_machines, ctx->rank);
+  MPI_Barrier(worker_comm);  
+
   // create barrier instance for the worker threads only, note that worker_mach and second half thread are not included. 
   thread_barrier barrier(FLAGS_threads);
 

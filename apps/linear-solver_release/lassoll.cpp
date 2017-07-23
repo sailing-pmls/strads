@@ -35,6 +35,7 @@ DEFINE_string(data_xfile, "", "design matrix denoted as X : M by N matrix  ");
 DEFINE_string(data_yfile, "", "observation vector denoted as Y : M by 1 matrix  "); 
 DEFINE_int64(columns, 0, "the number of columns of x files .. denoted as N "); 
 DEFINE_int64(samples, 0, "the number of rows of x files, rows of Y file .. denoted as M ");
+DEFINE_int64(nzcount, 0, "the number of non zero elements in the input matrix X  ");
 DEFINE_int64(pipeline, 0, "pipeline depth : staleness ");
 
 DEFINE_double(bw, 0.0001, " base width ");

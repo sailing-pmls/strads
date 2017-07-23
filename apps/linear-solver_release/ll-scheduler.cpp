@@ -94,7 +94,6 @@ void *process_sched_system_cmd_start_scheduler(sharedctx *ctx, mbuffer *mbuf, sc
       strads_msg(OUT, "Rank(%d) chunks (%ld)  progress(%ld) taskcnt(%ld)\n", 
 		 ctx->rank, chunks, progress, taskcnt);
       
-
       // SANITY CHECKING : DON'T REMOVE - this is one time overhead. 
       assert(progress == taskcnt); // count should be equal to progress
       for(int64_t i=0; i < taskcnt; i++){
@@ -103,7 +102,6 @@ void *process_sched_system_cmd_start_scheduler(sharedctx *ctx, mbuffer *mbuf, sc
 
       // distribut weight information to all child threads 
       //   scatter and make them ready for first scheduling request. 
-
       //int thrds = ctx->m_params->m_sp->m_thrds_per_scheduler;
       int thrds = FLAGS_threads_per_scheduler;
 
@@ -309,6 +307,29 @@ void *scheduler_mach(void *arg){
   strads_msg(OUT, "******* [scheduler-machine] rank(%d) boot up scheduler-mach (%d). create %d threads with baseline partno(%d)\n", 
 	     ctx->rank, ctx->m_scheduler_mid, thrds, basepartno);
 
+  MPI_Group worker_group, sched_group, orig_group;
+  MPI_Comm worker_comm, sched_comm; // to enforce barrier for the coordinators and workers  
+  int workerc_ranks[ctx->m_worker_machines+1];
+  int schedc_ranks[ctx->m_sched_machines+1];
+
+  for(int i(0); i<ctx->m_worker_machines; ++i){
+	  workerc_ranks[i] = i;
+  }
+
+  for(int i(ctx->m_worker_machines); i<ctx->m_worker_machines + ctx->m_sched_machines; ++i){
+	  schedc_ranks[i - ctx->m_worker_machines] = i;
+  }
+
+  workerc_ranks[ctx->m_worker_machines] = ctx->m_sched_machines +  ctx->m_worker_machines;
+  schedc_ranks[ctx->m_sched_machines] = ctx->m_sched_machines +  ctx->m_worker_machines;
+
+  MPI_Comm_group(MPI_COMM_WORLD, &orig_group);
+  MPI_Group_incl(orig_group, ctx->m_worker_machines+1, workerc_ranks, &worker_group);
+  MPI_Comm_create(MPI_COMM_WORLD, worker_group, &worker_comm);
+ 
+  MPI_Group_incl(orig_group, ctx->m_sched_machines+1, schedc_ranks, &sched_group);
+  MPI_Comm_create(MPI_COMM_WORLD, sched_group, &sched_comm);
+
   scheduler_threadctx **sthrds = (scheduler_threadctx **)calloc(MAX_SCHEDULER_THREAD, sizeof(scheduler_threadctx *));
 
   // make model partitioning scheme  
@@ -326,11 +347,6 @@ void *scheduler_mach(void *arg){
   }
 
   col_vspmat input_matrix(FLAGS_samples, FLAGS_columns);
-
-
-  // read input data : partition by column, physically stored in column major
-  //  cd_train::read_col_partition(FLAGS_data_xfile, input_matrix, ctx->m_worker_machines, ctx->rank);
-  // col partition by cont_range's partitioning scheme -- match with make_scheduling_taskpartition's scheme 
 
   for(int i=0; i<thrds; i++){    
     int64_t task_start = taskmap.schthrd_tmap[basepartno + i]->start;
@@ -370,9 +386,28 @@ void *scheduler_mach(void *arg){
     }
   }
 
+
+
+
+
+
+
+
+
+
+
+  
   // read input data : partition by column, physically stored in column major
-  cd_train::read_col_partition(FLAGS_data_xfile, input_matrix, FLAGS_scheduler, ctx->m_scheduler_mid);
-  //  cd_train::read_col_partition(FLAGS_data_xfile, input_matrix, ctx->m_worker_machines, ctx->rank);
+  //cd_train::read_col_partition(FLAGS_data_xfile, input_matrix, FLAGS_scheduler, ctx->m_scheduler_mid);
+  cd_train::read_col_partition_ring(ctx, FLAGS_data_xfile, input_matrix, FLAGS_scheduler, ctx->m_scheduler_mid);
+
+
+  MPI_Barrier(sched_comm);
+  
+
+
+
+
   // col partition by cont_range's partitioning scheme -- match with make_scheduling_taskpartition's scheme 
   strads_msg(OUT, "[Scheduler mach] allocated entry : %ld \n", input_matrix.allocatedentry());
 
