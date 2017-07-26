@@ -267,11 +267,9 @@ long mmt_partial_read_vector_ring(sharedctx *ctx, cas_array<double> &residual , 
   long unsigned int tmprow, tmpcol;
   double tmpval;
 
+#if 0 
   //  f = fopen(fn.c_str(), "r");
   //  assert(f);
-
-#if 0 
-  
   if(mm_read_banner(f, &matcode) != 0){
     strads_msg(OUT, "mmio fatal error. Could not process Matrix Market banner.\n");
     //    std::terminate();
