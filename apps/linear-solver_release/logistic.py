@@ -12,7 +12,7 @@ csample = [' 500 ']
 column = [' 1000 ']
 
 # scheduler setting
-cscheduler = [' 1 ']
+cscheduler = [' 2 ']
 scheduler_threads = [' 1 ']
 
 # worker thread per machine
