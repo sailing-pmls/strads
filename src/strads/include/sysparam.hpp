@@ -29,7 +29,8 @@ public:
 	   int64_t progressfreq, 
 	   bool singlemach, 
 	   std::string &ps_nodefile, 
-	   std::string &ps_linkfile)
+	   std::string &ps_linkfile,
+	   bool ring4scheduler)
     :m_machfile(machfile),
      m_nodefile(nodefile),
      m_linkfile(linkfile),
@@ -44,7 +45,9 @@ public:
      m_progressfreq(progressfreq), 
      m_singlemach(singlemach), 
      m_ps_nodefile(ps_nodefile),
-     m_ps_linkfile(ps_linkfile){
+     m_ps_linkfile(ps_linkfile),
+     m_ring4scheduler(ring4scheduler)
+  {
 
     m_cores = sysconf(_SC_NPROCESSORS_ONLN) - 2; // zmq threads or ib threads 
 
@@ -101,6 +104,7 @@ public:
 
   std::string m_ps_nodefile;  // by system -- from mach file 
   std::string m_ps_linkfile;  // by system -- from mach file 
+  bool m_ring4scheduler;
 };
 
 

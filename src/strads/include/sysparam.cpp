@@ -21,6 +21,8 @@ DEFINE_bool(singlemach, false, "specify whether to run on single machine");
 DEFINE_string(ps_nodefile, "", "PS Node Conf file");
 DEFINE_string(ps_linkfile, "", "PS Link Conf file");
 
+DEFINE_bool(ring4scheduler, false, "flag to disable/enable a ring for a coordinator / scheduler nodes");
+
 DEFINE_int32(ps_server_thrds, 8, "Threads per Cyclone Server Node");
 
 
@@ -55,7 +57,8 @@ sysparam *pi_initparams(int argc, char **argv, int mpi_rank){
 			      FLAGS_progressfreq, 
 			      FLAGS_singlemach, 
 			      FLAGS_ps_nodefile, 
-			      FLAGS_ps_linkfile);
+			      FLAGS_ps_linkfile,
+			      FLAGS_ring4scheduler);
 
   // user parameters should be put on the user class in app directory. 
   if(mpi_rank == 0){

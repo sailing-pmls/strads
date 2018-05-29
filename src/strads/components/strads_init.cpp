@@ -184,8 +184,11 @@ sharedctx *strads_init(int argc, char **argv){
     create_ringworker_ethernet_aux(pshctx, *contextzmq, mpi_size, pshctx->nodes[mpi_size-1]->ip);
 
 
-    create_ringscheduler_ethernet_aux(pshctx, *contextzmq, mpi_size, pshctx->nodes[mpi_size-1]->ip);    
-
+    LOG(ERROR) << " pshctx->m_sched_machines : " << pshctx->m_sched_machines << std::endl;
+    
+    if(params->m_ring4scheduler){
+      create_ringscheduler_ethernet_aux(pshctx, *contextzmq, mpi_size, pshctx->nodes[mpi_size-1]->ip);    
+    }
     
     LOG(INFO) << "Star Topology is cretaed with " << mpi_size << " machines (processes) " << endl;
       
