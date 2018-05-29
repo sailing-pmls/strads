@@ -3,6 +3,7 @@ import os
 import sys
 
 datafile = ['./sampledata/mftest.mmt ']
+
 threads = [' 16 ']
 rank = [' 40 ']
 iterations = [' 10 ']
