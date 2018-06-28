@@ -147,6 +147,7 @@ void Tester::InferOneSample(int doc_id, int tid) {
 
   // Construct counts
   EArray doc_topic_count(num_topic_);
+  doc_topic_count.setZero();
   for (auto topic : doc.assignment_) ++doc_topic_count(topic);
 
   // Perform Gibbs sampling to obtain an estimate of theta
