@@ -241,6 +241,7 @@ void Trainer::TrainOneSample(Sample& doc, int tid) {
   // Construct doc topic count on the fly to save memory
   // Use double to accomodate dot product
   EArray doc_topic_count(FLAGS_num_topic);
+  doc_topic_count.setZero();
   for (auto topic : doc.assignment_) ++doc_topic_count(topic);
 
   // Draw auxilliary variable (all L x 1)
